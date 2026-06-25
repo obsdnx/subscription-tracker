@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subscription Tracker</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#f8fafc;--card:#fff;--border:#e2e8f0;
+  --text:#0f172a;--muted:#64748b;
+  --primary:#3b82f6;--primary-dark:#1d4ed8;
+  --green:#16a34a;--green-bg:#f0fdf4;
+  --red:#dc2626;--red-bg:#fef2f2;
+  --amber:#d97706;--amber-bg:#fffbeb;
+  --violet-bg:#faf5ff;--violet:#7c3aed;
+  --blue-bg:#eff6ff;--blue:#2563eb;
+  --sh:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --sh-md:0 4px 6px -1px rgba(0,0,0,.07),0 2px 4px -1px rgba(0,0,0,.04);
+  --r:10px;
+}
+
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;
+}
+
+/* ── Header ─────────────────────── */
+header{
+  background:#0f172a;color:#fff;padding:0 24px;height:56px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+header h1{font-size:15px;font-weight:600;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+header h1 .logo{font-size:20px}
+
+/* ── Stats ──────────────────────── */
+.stats{display:flex;gap:1px;background:var(--border);border-bottom:1px solid var(--border)}
+.stat{flex:1;background:var(--card);padding:14px 24px}
+.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:2px}
+.stat-value{font-size:22px;font-weight:700;letter-spacing:-.02em}
+.stat-value.green{color:var(--green)}
+.stat-value.amber{color:var(--amber)}
+
+/* ── Layout ─────────────────────── */
+.layout{display:grid;grid-template-columns:1fr 300px;gap:24px;max-width:1140px;margin:0 auto;padding:24px;align-items:start}
+
+/* ── Toolbar ────────────────────── */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.pill-group{display:flex;background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.pill{border:none;background:none;padding:6px 14px;font-size:13px;cursor:pointer;color:var(--muted);transition:all .15s;white-space:nowrap}
+.pill:hover{background:var(--bg)}
+.pill.active{background:var(--primary);color:#fff}
+select.flt{border:1px solid var(--border);border-radius:8px;padding:6px 32px 6px 12px;font-size:13px;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2364748b'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z'/%3E%3C/svg%3E") no-repeat right 8px center/16px;color:var(--text);cursor:pointer;appearance:none;outline:none}
+select.flt:focus{border-color:var(--primary)}
+
+/* ── Cards ──────────────────────── */
+.sub-list{display:flex;flex-direction:column;gap:8px}
+.sub-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;
+  gap:12px;box-shadow:var(--sh);transition:box-shadow .15s;
+}
+.sub-card:hover{box-shadow:var(--sh-md)}
+.sub-card.cancelled{opacity:.5}
+
+.sub-name{font-size:15px;font-weight:600;margin-bottom:5px}
+.sub-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.sub-date{font-size:12px;color:var(--muted);margin-top:4px}
+
+.badge{font-size:11px;font-weight:500;padding:2px 8px;border-radius:100px;white-space:nowrap}
+.b-active{background:var(--green-bg);color:var(--green)}
+.b-cancelled{background:#f1f5f9;color:var(--muted)}
+.b-cycle{background:var(--blue-bg);color:var(--blue)}
+.b-cat{background:var(--violet-bg);color:var(--violet)}
+.b-soon{background:var(--amber-bg);color:var(--amber)}
+.b-today{background:#fff1f2;color:#e11d48;font-weight:700}
+
+.sub-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0}
+.sub-cost{font-size:17px;font-weight:700}
+.sub-actions{display:flex;gap:5px}
+
+.btn-xs{border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);padding:3px 9px;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-xs:hover{background:var(--bg)}
+.btn-xs.danger{color:var(--red);border-color:#fecaca}
+.btn-xs.danger:hover{background:var(--red-bg)}
+.btn-xs.ghost{color:var(--primary);border-color:var(--blue-bg)}
+.btn-xs.ghost:hover{background:var(--blue-bg)}
+
+.empty{text-align:center;padding:48px;color:var(--muted);background:var(--card);border:1px dashed var(--border);border-radius:var(--r)}
+.empty p{margin-top:6px;font-size:14px}
+
+/* ── Sidebar ────────────────────── */
+.sidebar{display:flex;flex-direction:column;gap:16px}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh)}
+.panel-hd{padding:10px 16px;font-size:11px;font-weight:700;border-bottom:1px solid var(--border);background:#fafafa;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.panel-bd{padding:12px 16px}
+
+.up-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+.up-row:last-child{border-bottom:none}
+.up-name{font-weight:500}
+.up-date{color:var(--muted);font-size:12px}
+.up-cost{font-weight:600}
+
+.sp-row{margin-bottom:12px}
+.sp-row:last-child{margin-bottom:0}
+.sp-lbl{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
+.sp-lbl span:last-child{font-weight:600}
+.sp-bg{background:#f1f5f9;border-radius:4px;height:6px}
+.sp-bar{background:var(--primary);height:6px;border-radius:4px;transition:width .5s ease}
+
+/* ── Buttons ────────────────────── */
+.btn{background:var(--primary);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:14px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:background .15s}
+.btn:hover{background:var(--primary-dark)}
+.btn-outline{background:none;border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:14px;cursor:pointer;transition:all .15s;color:var(--text)}
+.btn-outline:hover{background:var(--bg)}
+
+/* ── Modal ──────────────────────── */
+.overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(3px);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--card);border-radius:14px;width:440px;max-width:calc(100vw - 32px);box-shadow:0 24px 64px rgba(0,0,0,.18);transform:translateY(10px);transition:transform .2s}
+.overlay.open .modal{transform:translateY(0)}
+.modal-hd{padding:20px 24px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.modal-title{font-size:16px;font-weight:600}
+.modal-x{background:none;border:none;cursor:pointer;color:var(--muted);font-size:22px;line-height:1;padding:0 2px}
+.modal-x:hover{color:var(--text)}
+.modal-bd{padding:20px 24px;display:flex;flex-direction:column;gap:14px}
+.modal-ft{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.field input,.field select{border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:14px;outline:none;transition:border-color .15s,box-shadow .15s;background:var(--card);color:var(--text);width:100%}
+.field input:focus,.field select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* ── Toast ──────────────────────── */
+#toasts{position:fixed;bottom:24px;right:24px;z-index:2000;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:#0f172a;color:#fff;padding:11px 16px;border-radius:8px;font-size:14px;box-shadow:var(--sh-md);animation:tin .2s ease;pointer-events:none}
+.toast.ok{background:var(--green)}
+.toast.err{background:var(--red)}
+@keyframes tin{from{transform:translateX(110%);opacity:0}to{transform:none;opacity:1}}
+
+@media(max-width:780px){
+  .layout{grid-template-columns:1fr}
+  .stats{flex-wrap:wrap}
+  .stat{min-width:50%}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span class="logo">📋</span>Subscription Tracker</h1>
+  <button class="btn" onclick="openModal()">
+    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"/></svg>
+    Add Subscription
+  </button>
+</header>
+
+<div class="stats">
+  <div class="stat"><div class="stat-label">Monthly spend</div><div class="stat-value green" id="s-total">—</div></div>
+  <div class="stat"><div class="stat-label">Active</div><div class="stat-value" id="s-active">—</div></div>
+  <div class="stat"><div class="stat-label">Due this week</div><div class="stat-value amber" id="s-soon">—</div></div>
+  <div class="stat"><div class="stat-label">Cancelled</div><div class="stat-value" id="s-cancelled">—</div></div>
+</div>
+
+<div class="layout">
+  <div>
+    <div class="toolbar">
+      <div class="pill-group" id="status-pills">
+        <button class="pill active" data-s="">All</button>
+        <button class="pill" data-s="active">Active</button>
+        <button class="pill" data-s="cancelled">Cancelled</button>
+      </div>
+      <select class="flt" id="cat-flt" onchange="applyFilters()">
+        <option value="">All categories</option>
+      </select>
+    </div>
+    <div class="sub-list" id="sub-list"><div class="empty"><p>Loading…</p></div></div>
+  </div>
+
+  <div class="sidebar">
+    <div class="panel">
+      <div class="panel-hd">Due this week</div>
+      <div class="panel-bd" id="upcoming"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-hd">Spend by category</div>
+      <div class="panel-bd" id="spend"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="overlay" id="overlay" onclick="overlayClick(event)">
+  <div class="modal">
+    <div class="modal-hd">
+      <span class="modal-title" id="modal-title">Add Subscription</span>
+      <button class="modal-x" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-bd">
+      <input type="hidden" id="f-id">
+      <div class="field">
+        <label>Name *</label>
+        <input type="text" id="f-name" placeholder="Netflix" autocomplete="off">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Cost *</label>
+          <input type="number" id="f-cost" placeholder="9.99" min="0.01" step="0.01">
+        </div>
+        <div class="field">
+          <label>Currency</label>
+          <input type="text" id="f-curr" value="GBP" maxlength="3" style="text-transform:uppercase">
+        </div>
+      </div>
+      <div class="field">
+        <label>Billing cycle</label>
+        <select id="f-cycle">
+          <option value="monthly">Monthly</option>
+          <option value="yearly">Yearly</option>
+          <option value="weekly">Weekly</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Next billing date *</label>
+        <input type="date" id="f-date">
+      </div>
+      <div class="field">
+        <label>Category</label>
+        <input type="text" id="f-cat" placeholder="streaming" autocomplete="off">
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="save()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+'use strict';
+
+// ── State ────────────────────────────────────────────────────────────────────
+let ALL = [];
+
+// ── Formatting ───────────────────────────────────────────────────────────────
+function money(n, currency='GBP') {
+  try { return new Intl.NumberFormat('en-GB', {style:'currency', currency}).format(n); }
+  catch { return `${currency} ${Number(n).toFixed(2)}`; }
+}
+
+function fmtDate(s) {
+  const [y,m,d] = s.split('-').map(Number);
+  return new Date(y, m-1, d).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
+}
+
+function daysUntil(s) {
+  const [y,m,d] = s.split('-').map(Number);
+  const t = new Date(); t.setHours(0,0,0,0);
+  return Math.round((new Date(y,m-1,d) - t) / 86400000);
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Data ─────────────────────────────────────────────────────────────────────
+async function load() {
+  const [subs, upcoming, spend] = await Promise.all([
+    api('/subscriptions'),
+    api('/subscriptions/upcoming?days=7'),
+    api('/analytics/monthly-spend'),
+  ]);
+  ALL = subs;
+  renderStats(subs, upcoming, spend);
+  rebuildCatFilter(subs);
+  applyFilters();
+  renderUpcoming(upcoming);
+  renderSpend(spend);
+}
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (!r.ok) throw new Error(`${r.status} ${await r.text()}`);
+  if (r.status === 204) return null;
+  return r.json();
+}
+
+// ── Stats bar ────────────────────────────────────────────────────────────────
+function renderStats(subs, upcoming, spend) {
+  document.getElementById('s-total').textContent = money(spend.total_monthly);
+  document.getElementById('s-active').textContent = subs.filter(s=>s.status==='active').length;
+  document.getElementById('s-soon').textContent = upcoming.length;
+  document.getElementById('s-cancelled').textContent = subs.filter(s=>s.status==='cancelled').length;
+}
+
+// ── Category filter ──────────────────────────────────────────────────────────
+function rebuildCatFilter(subs) {
+  const sel = document.getElementById('cat-flt');
+  const prev = sel.value;
+  const cats = [...new Set(subs.map(s=>s.category))].sort();
+  sel.innerHTML = '<option value="">All categories</option>' +
+    cats.map(c=>`<option${c===prev?' selected':''}>${esc(c)}</option>`).join('');
+}
+
+// ── Status pills ─────────────────────────────────────────────────────────────
+document.getElementById('status-pills').addEventListener('click', e => {
+  const p = e.target.closest('.pill');
+  if (!p) return;
+  document.querySelectorAll('.pill').forEach(x=>x.classList.remove('active'));
+  p.classList.add('active');
+  applyFilters();
+});
+
+function applyFilters() {
+  const status = document.querySelector('.pill.active')?.dataset.s ?? '';
+  const cat = document.getElementById('cat-flt').value;
+  const filtered = ALL.filter(s =>
+    (!status || s.status === status) &&
+    (!cat || s.category === cat)
+  );
+  renderSubs(filtered);
+}
+
+// ── Subscription list ─────────────────────────────────────────────────────────
+function renderSubs(subs) {
+  const el = document.getElementById('sub-list');
+  if (!subs.length) {
+    el.innerHTML = `<div class="empty"><strong>No subscriptions</strong><p>Add one with the button above.</p></div>`;
+    return;
+  }
+
+  el.innerHTML = subs.map(s => {
+    const days = daysUntil(s.next_billing_date);
+    const dateBadge = days === 0
+      ? `<span class="badge b-today">Due today</span>`
+      : (days > 0 && days <= 7 && s.status === 'active'
+          ? `<span class="badge b-soon">In ${days}d</span>` : '');
+
+    const toggleBtn = s.status === 'active'
+      ? `<button class="btn-xs" onclick="setStatus(${s.id},'cancelled')">Cancel</button>`
+      : `<button class="btn-xs ghost" onclick="setStatus(${s.id},'active')">Reactivate</button>`;
+
+    // Encode the sub object for the edit button
+    const encoded = esc(JSON.stringify(s));
+
+    return `
+    <div class="sub-card${s.status==='cancelled'?' cancelled':''}">
+      <div>
+        <div class="sub-name">${esc(s.name)}</div>
+        <div class="sub-meta">
+          <span class="badge b-${s.status}">${s.status}</span>
+          <span class="badge b-cycle">${s.billing_cycle}</span>
+          <span class="badge b-cat">${esc(s.category)}</span>
+          ${dateBadge}
+        </div>
+        <div class="sub-date">Next charge: ${fmtDate(s.next_billing_date)}</div>
+      </div>
+      <div class="sub-right">
+        <div class="sub-cost">${money(s.cost, s.currency)}</div>
+        <div class="sub-actions">
+          <button class="btn-xs" onclick='openModal(${JSON.stringify(s)})'>Edit</button>
+          ${toggleBtn}
+          <button class="btn-xs danger" onclick="del(${s.id},'${esc(s.name)}')">Delete</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Upcoming ─────────────────────────────────────────────────────────────────
+function renderUpcoming(subs) {
+  const el = document.getElementById('upcoming');
+  if (!subs.length) {
+    el.innerHTML = `<div style="color:var(--muted);font-size:13px;text-align:center;padding:6px 0">Nothing due this week 🎉</div>`;
+    return;
+  }
+  el.innerHTML = subs.map(s => `
+    <div class="up-row">
+      <div><div class="up-name">${esc(s.name)}</div><div class="up-date">${fmtDate(s.next_billing_date)}</div></div>
+      <div class="up-cost">${money(s.cost, s.currency)}</div>
+    </div>`).join('');
+}
+
+// ── Spend breakdown ──────────────────────────────────────────────────────────
+function renderSpend(spend) {
+  const el = document.getElementById('spend');
+  if (!spend.by_category.length) {
+    el.innerHTML = `<div style="color:var(--muted);font-size:13px">No active subscriptions</div>`;
+    return;
+  }
+  const sorted = [...spend.by_category].sort((a,b) => b.monthly_equivalent - a.monthly_equivalent);
+  const max = sorted[0].monthly_equivalent;
+  el.innerHTML = sorted.map(c => {
+    const w = Math.round(c.monthly_equivalent / max * 100);
+    return `<div class="sp-row">
+      <div class="sp-lbl"><span>${esc(c.category)}</span><span>${money(c.monthly_equivalent)}/mo</span></div>
+      <div class="sp-bg"><div class="sp-bar" style="width:${w}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function openModal(sub) {
+  document.getElementById('modal-title').textContent = sub ? 'Edit Subscription' : 'Add Subscription';
+  document.getElementById('f-id').value   = sub?.id ?? '';
+  document.getElementById('f-name').value = sub?.name ?? '';
+  document.getElementById('f-cost').value = sub?.cost ?? '';
+  document.getElementById('f-curr').value = sub?.currency ?? 'GBP';
+  document.getElementById('f-cycle').value = sub?.billing_cycle ?? 'monthly';
+  document.getElementById('f-date').value  = sub?.next_billing_date ?? '';
+  document.getElementById('f-cat').value   = sub?.category ?? '';
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('f-name').focus(), 60);
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function overlayClick(e) {
+  if (e.target === document.getElementById('overlay')) closeModal();
+}
+
+document.addEventListener('keydown', e => { if (e.key==='Escape') closeModal(); });
+
+// ── Save (create or patch) ────────────────────────────────────────────────────
+async function save() {
+  const id       = document.getElementById('f-id').value;
+  const name     = document.getElementById('f-name').value.trim();
+  const cost     = parseFloat(document.getElementById('f-cost').value);
+  const currency = document.getElementById('f-curr').value.trim().toUpperCase() || 'GBP';
+  const cycle    = document.getElementById('f-cycle').value;
+  const date_val = document.getElementById('f-date').value;
+  const category = document.getElementById('f-cat').value.trim() || 'uncategorised';
+
+  if (!name || isNaN(cost) || cost <= 0 || !date_val) {
+    toast('Name, a positive cost, and a billing date are required.', 'err'); return;
+  }
+
+  try {
+    await api(id ? `/subscriptions/${id}` : '/subscriptions', {
+      method: id ? 'PATCH' : 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({name, cost, currency, billing_cycle: cycle, next_billing_date: date_val, category}),
+    });
+    closeModal();
+    toast(id ? 'Updated' : 'Added', 'ok');
+    await load();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+// ── Actions ──────────────────────────────────────────────────────────────────
+async function setStatus(id, status) {
+  const label = status === 'cancelled' ? 'Cancel' : 'Reactivate';
+  if (!confirm(`${label} this subscription?`)) return;
+  try {
+    await api(`/subscriptions/${id}`, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({status}),
+    });
+    toast(status === 'cancelled' ? 'Cancelled' : 'Reactivated', 'ok');
+    await load();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function del(id, name) {
+  if (!confirm(`Permanently delete "${name}"?`)) return;
+  try {
+    await api(`/subscriptions/${id}`, {method:'DELETE'});
+    toast(`Deleted "${name}"`);
+    await load();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function toast(msg, type='') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(()=>el.remove(), 3200);
+}
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+load();
+</script>
+</body>
+</html>
